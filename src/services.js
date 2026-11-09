@@ -125,7 +125,7 @@ function createServices(store, opts = {}) {
   const items = {
     list({ q } = {}) {
       const rows = store.all(`
-        SELECT i.id, i.code, i.name, i.added_date AS addedDate,
+        SELECT i.id, i.code, i.name, i.unit, i.added_date AS addedDate,
           COALESCE((SELECT SUM(l.qty) FROM lines l JOIN docs d ON d.id = l.doc_id WHERE l.item_id = i.id AND d.kind = 'IN' AND d.status = 'ACTIVE'), 0) AS qtyIn,
           COALESCE((SELECT SUM(l.qty) FROM lines l JOIN docs d ON d.id = l.doc_id WHERE l.item_id = i.id AND d.kind = 'OUT' AND d.status = 'ACTIVE'), 0) AS qtyOut,
           COALESCE((SELECT SUM(qty_left) FROM layers WHERE item_id = i.id), 0) AS stock,
@@ -136,10 +136,10 @@ function createServices(store, opts = {}) {
       return s ? rows.filter((r) => r.code.toLocaleLowerCase('az').includes(s) || r.name.toLocaleLowerCase('az').includes(s)) : rows
     },
     get({ id }) {
-      const item = store.get('SELECT id, code, name, added_date AS addedDate FROM items WHERE id = ?', [id])
+      const item = store.get('SELECT id, code, name, unit, added_date AS addedDate FROM items WHERE id = ?', [id])
       if (!item) throw new AppError('Mal tapılmadı')
       const moves = store.all(
-        `SELECT d.id AS docId, d.kind, d.no, d.doc_date AS date, d.voen, d.status, l.qty, l.price, l.amount
+        `SELECT d.id AS docId, d.kind, d.no, d.ref, d.doc_date AS date, d.voen, d.party, d.status, l.qty, l.price, l.amount, l.note, l.dqn, l.route
          FROM lines l JOIN docs d ON d.id = l.doc_id WHERE l.item_id = ?
          ORDER BY d.doc_date, d.created_at, d.id, l.line_no`,
         [id],
@@ -172,7 +172,7 @@ function createServices(store, opts = {}) {
   // ── Sənədlər (alış / məxaric) ──────────────────────────────
   const docLines = (docId) =>
     store.all(
-      `SELECT l.id, l.line_no AS lineNo, l.qty, l.price, l.amount, i.id AS itemId, i.code, i.name
+      `SELECT l.id, l.line_no AS lineNo, l.qty, l.price, l.amount, l.note, l.dqn, l.route, i.id AS itemId, i.code, i.name, i.unit
        FROM lines l JOIN items i ON i.id = l.item_id WHERE l.doc_id = ? ORDER BY l.line_no`,
       [docId],
     )
@@ -202,19 +202,26 @@ function createServices(store, opts = {}) {
   const docs = {
     nextNo: ({ kind }) => (store.get('SELECT MAX(no) AS n FROM docs WHERE kind = ?', [kind])?.n ?? 0) + 1,
 
-    save({ kind, date, voen, lines }, who) {
+    save({ kind, date, voen, partyName, lines }, who) {
       if (kind !== 'IN' && kind !== 'OUT') throw new AppError('Növ: alış və ya məxaric')
       if (!isIso(date)) throw new AppError('Tarixi düzgün yazın', 'date')
       if (date > today()) throw new AppError('Gələcək tarixlə sənəd yazmaq olmaz', 'date')
-      const v = str(voen, 20).replace(/\s/g, '')
-      if (v && !/^\d{10}$/.test(v)) throw new AppError('VÖEN 10 rəqəmdən ibarət olmalıdır', 'voen')
+      const v = str(voen, 20).replace(/\s/g, '').toUpperCase()
+      if (v && !/^[A-Z0-9_-]{1,20}$/.test(v)) throw new AppError('VÖEN: yalnız rəqəm və hərf (məs. 1234567890 və ya PRVDR0003)', 'voen')
+      let party = v ? (store.get('SELECT name FROM parties WHERE voen = ?', [v])?.name ?? '') : ''
+      const newParty = v && !party ? str(partyName, 120) : ''
       const rows = (Array.isArray(lines) ? lines : []).filter((l) => str(l.code) || str(l.qty) || str(l.name))
       if (!rows.length) throw new AppError('Ən azı bir sətir yazın')
       if (rows.length > 500) throw new AppError('Bir sənəddə ən çox 500 sətir')
 
       return store.tx(() => {
         const no = docs.nextNo({ kind })
-        const docId = store.insert('INSERT INTO docs (kind, no, doc_date, voen, created_at) VALUES (?, ?, ?, ?, ?)', [kind, no, date, v, stamp()])
+        if (newParty) {
+          store.run('INSERT INTO parties (voen, name) VALUES (?, ?)', [v, newParty])
+          party = newParty
+          audit(who, 'Yeni kontragent', `${v} «${newParty}»`)
+        }
+        const docId = store.insert('INSERT INTO docs (kind, no, doc_date, voen, party, created_at) VALUES (?, ?, ?, ?, ?, ?)', [kind, no, date, v, party, stamp()])
         let total = 0
         rows.forEach((l, i) => {
           const n = i + 1
@@ -260,11 +267,11 @@ function createServices(store, opts = {}) {
       if (status === 'ACTIVE' || status === 'CANCELLED') where.push('d.status = ?') && params.push(status)
       const s = str(q, 60)
       if (s) {
-        where.push(`(d.voen LIKE ? OR CAST(d.no AS TEXT) = ? OR EXISTS (SELECT 1 FROM lines l JOIN items i ON i.id = l.item_id WHERE l.doc_id = d.id AND (i.code LIKE ? OR i.name LIKE ?)))`)
-        params.push(`%${s}%`, s.replace(/^№/, ''), `%${s}%`, `%${s}%`)
+        where.push(`(d.voen LIKE ? OR d.party LIKE ? OR d.ref LIKE ? OR CAST(d.no AS TEXT) = ? OR EXISTS (SELECT 1 FROM lines l JOIN items i ON i.id = l.item_id WHERE l.doc_id = d.id AND (i.code LIKE ? OR i.name LIKE ? OR l.dqn = ? OR l.note LIKE ?)))`)
+        params.push(`%${s}%`, `%${s}%`, `%${s}%`, s.replace(/^№/, ''), `%${s}%`, `%${s}%`, s, `%${s}%`)
       }
       const rows = store.all(
-        `SELECT d.id, d.kind, d.no, d.doc_date AS date, d.voen, d.status, d.created_at AS createdAt, d.cancelled_at AS cancelledAt, d.cancel_reason AS cancelReason,
+        `SELECT d.id, d.kind, d.no, d.ref, d.doc_date AS date, d.voen, d.party, d.status, d.created_at AS createdAt, d.cancelled_at AS cancelledAt, d.cancel_reason AS cancelReason,
            (SELECT COUNT(*) FROM lines WHERE doc_id = d.id) AS lineCount,
            (SELECT COALESCE(SUM(amount), 0) FROM lines WHERE doc_id = d.id) AS total
          FROM docs d WHERE ${where.join(' AND ')} ORDER BY d.doc_date DESC, d.no DESC LIMIT 1000`,
@@ -275,7 +282,7 @@ function createServices(store, opts = {}) {
     },
 
     get({ id }) {
-      const d = store.get('SELECT id, kind, no, doc_date AS date, voen, status, created_at AS createdAt, cancelled_at AS cancelledAt, cancel_reason AS cancelReason FROM docs WHERE id = ?', [id])
+      const d = store.get('SELECT id, kind, no, ref, doc_date AS date, voen, party, status, created_at AS createdAt, cancelled_at AS cancelledAt, cancel_reason AS cancelReason FROM docs WHERE id = ?', [id])
       if (!d) throw new AppError('Sənəd tapılmadı')
       d.lines = docLines(id)
       if (d.kind === 'OUT') {
@@ -352,6 +359,10 @@ function createServices(store, opts = {}) {
         return { found: true, stock, enough: need <= 0, amount: need <= 0 ? amount : null }
       })
     },
+  }
+
+  const parties = {
+    list: () => store.all('SELECT voen, name FROM parties ORDER BY voen'),
   }
 
   // ── Xətlər və avtobuslar ───────────────────────────────────
@@ -602,7 +613,7 @@ function createServices(store, opts = {}) {
     },
   }
 
-  return { auth, items, docs, routes, buses, moves, notes, rollover, today, audit }
+  return { auth, items, docs, parties, routes, buses, moves, notes, rollover, today, audit }
 }
 
 // formatlar (xəta mətnləri üçün)

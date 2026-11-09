@@ -138,7 +138,23 @@ class Store {
     this.db = file && fs.existsSync(file) ? new SQL.Database(fs.readFileSync(file)) : new SQL.Database()
     this.inTx = false
     this.db.run(SCHEMA)
+    this.migrate()
     if (file) this.save()
+  }
+
+  /** Köhnə bazaya yeni sütunlar (məlumat itmir) */
+  migrate() {
+    const addCol = (t, c, def) => {
+      if (!this.all(`PRAGMA table_info(${t})`).some((r) => r.name === c)) this.db.run(`ALTER TABLE ${t} ADD COLUMN ${c} ${def}`)
+    }
+    addCol('items', 'unit', "TEXT NOT NULL DEFAULT ''")
+    addCol('docs', 'ref', "TEXT NOT NULL DEFAULT ''") // köhnə sənəd nömrəsi (qaimə)
+    addCol('docs', 'party', "TEXT NOT NULL DEFAULT ''") // kontragentin adı
+    addCol('lines', 'note', "TEXT NOT NULL DEFAULT ''") // şərh
+    addCol('lines', 'dqn', "TEXT NOT NULL DEFAULT ''") // avtobus (DQN)
+    addCol('lines', 'route', "TEXT NOT NULL DEFAULT ''") // xətt
+    this.db.run('CREATE TABLE IF NOT EXISTS parties (voen TEXT PRIMARY KEY COLLATE NOCASE, name TEXT NOT NULL)')
+    this.db.run('CREATE INDEX IF NOT EXISTS docs_kind_date ON docs (kind, doc_date)')
   }
 
   all(sql, params = []) {

@@ -59,14 +59,14 @@ function docsPage(kind) {
         return
       }
       $('#wrap').innerHTML = `<table class="tbl">
-        <thead><tr><th style="width:70px">№</th><th style="width:110px">Tarix</th><th style="width:130px">VÖEN</th><th>Mallar</th><th class="num" style="width:70px">Sətir</th><th class="num" style="width:140px">Məbləğ</th><th style="width:120px">Status</th></tr></thead>
+        <thead><tr><th style="width:70px">№</th><th style="width:110px">Tarix</th><th style="width:200px">VÖEN / kontragent</th><th>Mallar</th><th class="num" style="width:70px">Sətir</th><th class="num" style="width:140px">Məbləğ</th><th style="width:120px">Status</th></tr></thead>
         <tbody>${docs
           .map((d) => {
             const names = d.lines.slice(0, 3).map((l) => esc(l.name)).join(', ')
             return `<tr class="click ${d.status !== 'ACTIVE' ? 'cancelled' : ''}" data-id="${d.id}">
             <td><b class="strike tabular">№${d.no}</b></td>
             <td class="tabular">${dmy(d.date)}</td>
-            <td class="tabular">${esc(d.voen) || '<span class="faint">—</span>'}</td>
+            <td>${d.voen ? `<div class="tabular">${esc(d.voen)}</div>${d.party ? `<div class="small muted" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.party)}</div>` : ''}` : '<span class="faint">—</span>'}</td>
             <td style="max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${names}${d.lines.length > 3 ? ` <span class="faint">+${d.lines.length - 3}</span>` : ''}</td>
             <td class="num">${d.lineCount}</td>
             <td class="num"><b class="strike">${fmtMoney(d.total)} ₼</b></td>
@@ -86,7 +86,7 @@ function docsPage(kind) {
       const cancelled = d.status !== 'ACTIVE'
       drawer({
         title: `${IN ? 'Alış' : 'Məxaric'} №${d.no}`,
-        sub: `${dmy(d.date)}${d.voen ? ` · VÖEN ${esc(d.voen)}` : ''} · yazılıb ${dmy(d.createdAt.slice(0, 10))} ${hm(d.createdAt)}`,
+        sub: `${dmy(d.date)}${d.voen ? ` · VÖEN ${esc(d.voen)}` : ''}${d.party ? ` · ${esc(d.party)}` : ''}${d.ref ? ` · köhnə № ${esc(d.ref)}` : ''} · yazılıb ${dmy(d.createdAt.slice(0, 10))} ${hm(d.createdAt)}`,
         body: `
           ${cancelled ? `<div class="alert red" style="margin-bottom:14px">${icon('alert', 17)}<div><b>Ləğv edilib</b> — ${dmy(d.cancelledAt.slice(0, 10))} ${hm(d.cancelledAt)}<br/>Səbəb: ${esc(d.cancelReason)}</div></div>` : ''}
           <div class="card"><table class="tbl">
@@ -96,7 +96,8 @@ function docsPage(kind) {
                 (l) => `<tr>
                 <td class="muted">${l.lineNo}</td>
                 <td><span class="code">${esc(l.code)}</span></td>
-                <td>${esc(l.name)}
+                <td>${esc(l.name)}${l.unit ? ` <span class="faint small">${esc(l.unit)}</span>` : ''}
+                  ${l.note || l.dqn || l.route ? `<div class="small" style="margin-top:3px;color:var(--text-2)">${[l.dqn && `DQN ${esc(l.dqn)}`, l.route && `xətt ${esc(l.route)}`, l.note && esc(l.note)].filter(Boolean).join(' · ')}</div>` : ''}
                   ${!IN && l.takes?.length ? `<div class="small muted" style="margin-top:4px">${l.takes.map((t) => `Alış №${t.inNo} (${dm(t.date)}): ${fmtQty(t.qty)} × ${fmtPrice(t.cost)} = ${fmtMoney(t.amount)}`).join('<br/>')}</div>` : ''}
                   ${IN && l.used?.length ? `<div class="small muted" style="margin-top:4px">Məxaric olunub: ${l.used.map((n) => `№${n}`).join(', ')}</div>` : ''}
                 </td>

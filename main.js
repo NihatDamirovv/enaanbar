@@ -29,6 +29,7 @@ const PAGES = {
   buses: { w: 1220, h: 800, title: 'Avtobuslar' },
   notes: { w: 1120, h: 760, title: 'Qeydlər' },
   schedule: { w: 1000, h: 780, title: 'Çıxış cədvəli' },
+  assistant: { w: 900, h: 760, title: 'Köməkçi' },
   settings: { w: 820, h: 700, title: 'Parametrlər', write: true },
 }
 const wins = new Map()

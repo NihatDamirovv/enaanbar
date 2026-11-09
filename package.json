@@ -1,7 +1,7 @@
 {
   "name": "ena-anbar",
   "productName": "ENA Anbar",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ENA Anbar — avtobus şirkəti üçün anbar (FIFO), avtobuslar, qeydlər və çıxış cədvəli",
   "main": "main.js",
   "private": true,

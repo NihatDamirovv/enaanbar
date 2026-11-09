@@ -16,6 +16,7 @@ const { Store } = require('./src/store')
 const { createServices } = require('./src/services')
 const { createApi } = require('./src/api')
 const { buildWorkbook } = require('./src/excel')
+const { createAssistant } = require('./src/assistant')
 
 const PORT = Number(process.env.PORT || 3130)
 const HOST = process.env.HOST || '127.0.0.1'
@@ -146,7 +147,7 @@ async function onRequest(req, res) {
     if (req.method === 'POST' && p === '/api') {
       const body = JSON.parse((await readBody(req)) || '{}')
       const sess = sessionOf(req, true)
-      const r = await api.handle(String(body.method || ''), body.args, { session: sess.s, guard: guardOf(req) })
+      const r = await api.handle(String(body.method || ''), body.args, { session: sess.s, sessionKey: sess.token, guard: guardOf(req) })
       if (r.write) broadcast({ method: body.method })
       delete r.write
       if (sess.fresh) r.token = sess.token
@@ -213,7 +214,7 @@ async function main() {
     svc.auth.setup({ general: process.env.ENA_PW, anbar: process.env.ENA_APW })
     require('./src/demo').seed(svc)
   }
-  api = createApi({ svc, store, backup, info, allowSetup: process.env.ENA_ALLOW_SETUP === '1' })
+  api = createApi({ svc, store, backup, info, assistant: createAssistant({ svc, store }), allowSetup: process.env.ENA_ALLOW_SETUP === '1' })
   tick()
   if (svc.auth.isSetup()) backup()
   setInterval(tick, 25_000)

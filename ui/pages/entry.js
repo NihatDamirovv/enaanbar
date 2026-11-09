@@ -22,7 +22,8 @@ Pages.entry = () => {
         </div>
         <div class="field" style="width:120px"><label>Sənəd №</label><input class="inp tabular" id="docNo" readonly /></div>
         <div class="field" style="width:170px"><label>Tarix</label><input class="inp" id="date" type="date" /></div>
-        <div class="field" style="width:200px"><label>VÖEN</label><input class="inp tabular" id="voen" inputmode="numeric" maxlength="10" placeholder="10 rəqəm" autocomplete="off" /></div>
+        <div class="field" style="width:190px"><label>VÖEN</label><input class="inp tabular" id="voen" maxlength="20" placeholder="VÖEN və ya kod" list="voens" autocomplete="off" spellcheck="false" style="text-transform:uppercase" /></div>
+        <div class="field grow" style="min-width:220px"><label>Kontragent</label><input class="inp" id="party" placeholder="VÖEN yazanda adı özü çıxır" autocomplete="off" readonly tabindex="-1" /></div>
       </div>
       <div class="muted small" style="padding:9px 18px;background:var(--surface-2);border-bottom:1px solid var(--border)" id="hint"></div>
       <div style="flex:1;overflow:auto">
@@ -52,7 +53,7 @@ Pages.entry = () => {
         <button class="btn btn-primary btn-lg" id="save">${icon('save', 18)}Yadda saxla <span class="kbd">Ctrl+S</span></button>
       </div>
     </div>
-    <datalist id="codes"></datalist>`
+    <datalist id="codes"></datalist><datalist id="voens"></datalist>`
 
   const tbody = $('#sheet tbody')
   const dateEl = $('#date')
@@ -64,6 +65,30 @@ Pages.entry = () => {
     items = new Map(list.map((i) => [i.code.toLocaleLowerCase('az'), i]))
     $('#codes').innerHTML = list.map((i) => `<option value="${esc(i.code)}">${esc(i.name)}</option>`).join('')
     refreshAll()
+  }
+  let parties = new Map()
+  async function loadParties() {
+    const list = await api('parties.list')
+    parties = new Map(list.map((p) => [p.voen.toUpperCase(), p.name]))
+    $('#voens').innerHTML = list.map((p) => `<option value="${esc(p.voen)}">${esc(p.name)}</option>`).join('')
+    showParty()
+  }
+  function showParty() {
+    const v = $('#voen').value.trim().toUpperCase()
+    const el = $('#party')
+    const name = parties.get(v)
+    if (name) {
+      el.value = name
+      el.readOnly = true
+      el.tabIndex = -1
+      el.placeholder = ''
+    } else {
+      if (el.readOnly) el.value = ''
+      // yeni VÖEN — adı bir dəfə yazılır (istəyə görə)
+      el.readOnly = !v
+      el.tabIndex = v ? 0 : -1
+      el.placeholder = v ? 'Yeni kontragent — adını yazın (istəyə görə)' : 'VÖEN yazanda adı özü çıxır'
+    }
   }
   async function loadNo() {
     $('#docNo').value = `№ ${await api('docs.nextNo', { kind })}`
@@ -253,12 +278,15 @@ Pages.entry = () => {
   })
   dateEl.addEventListener('change', preview)
   $('#voen').addEventListener('input', (e) => {
-    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10)
+    e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 20)
+    showParty()
   })
 
   function clearForm(keepDate = true) {
     rows = Array.from({ length: ROWS }, newRow)
     $('#voen').value = ''
+    $('#party').value = ''
+    showParty()
     if (!keepDate) dateEl.value = todayIso()
     $('#err').innerHTML = ''
     render()
@@ -275,10 +303,10 @@ Pages.entry = () => {
     $('#err').innerHTML = ''
     btn.disabled = true
     try {
-      const r = await api('docs.save', { kind, date: dateEl.value, voen: $('#voen').value, lines: rows.map((x) => ({ code: x.code, name: x.name, qty: x.qty, price: x.price })) })
+      const r = await api('docs.save', { kind, date: dateEl.value, voen: $('#voen').value, partyName: $('#party').readOnly ? '' : $('#party').value, lines: rows.map((x) => ({ code: x.code, name: x.name, qty: x.qty, price: x.price })) })
       toast(`${kind === 'IN' ? 'Alış' : 'Məxaric'} №${r.no} yadda saxlandı — ${fmtMoney(r.total)} ₼`)
       clearForm()
-      await Promise.all([loadItems(), loadNo()])
+      await Promise.all([loadItems(), loadNo(), loadParties()])
       $('#voen').focus()
     } catch (err) {
       $('#err').innerHTML = `<div class="alert red" style="margin:12px 0 0">${icon('alert', 17)}<div>${esc(err.message)}</div></div>`
@@ -294,16 +322,18 @@ Pages.entry = () => {
     }
   })
   enterAsTab($('.card-body'))
-  $('#voen').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+  for (const id of ['#voen', '#party'])
+    $(id).addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return
       e.preventDefault()
+      if (id === '#voen' && !$('#party').readOnly) return $('#party').focus()
       $('[data-f="code"]', tbody)?.focus()
-    }
-  })
+    })
 
   rows = Array.from({ length: ROWS }, newRow)
   setKind('IN')
   loadItems()
+  loadParties()
   onDataChanged(() => {
     loadItems()
     loadNo()

@@ -35,15 +35,16 @@ async function run({ remote, openPage, setRole }) {
       items: [["document.querySelectorAll('tr[data-id]')[2].click()", 'mal']],
       issues: [["document.querySelector('tr[data-id]').click()", 'senet']],
       buses: [["document.querySelector('[data-act=move]').click()", 'yerdeyisme']],
+      assistant: [["document.querySelector('[data-q]').click()", 'cavab']],
     }
-    const pages = ['menu', 'entry', 'items', 'purchases', 'issues', 'buses', 'notes', 'schedule', 'settings']
+    const pages = (process.env.ENA_PAGES || 'menu,entry,items,purchases,issues,buses,notes,schedule,settings,assistant').split(',')
     for (const [i, p] of pages.entries()) {
       if (role !== 'anbar' && (p === 'entry' || p === 'settings')) continue
       const n = String(i + 3).padStart(2, '0')
       w = await shot(p, `${n}-${p}.png`)
       for (const [js, tag] of EXTRA[p] || []) {
         if (!(await w.webContents.executeJavaScript(`(() => { try { ${js}; return true } catch { return false } })()`))) continue
-        await wait(1500)
+        await wait(2500)
         fs.writeFileSync(path.join(out, `${n}-${p}-${tag}.png`), (await w.webContents.capturePage()).toPNG())
       }
       w.destroy()

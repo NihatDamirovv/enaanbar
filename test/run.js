@@ -33,7 +33,7 @@ async function main() {
 
   console.log('\n── Alış (yeni mallar avtomatik) ──')
   check('yeni kodda ad yoxdursa xəta', throws(() => s.docs.save({ kind: 'IN', date: '2026-11-01', lines: [{ code: 'A1', qty: '10', price: '5' }] }, W), /mal adını/))
-  check('səhv VÖEN', throws(() => s.docs.save({ kind: 'IN', date: '2026-11-01', voen: '123', lines: [{ code: 'A1', name: 'Yağ filtri', qty: '1', price: '1' }] }, W), /VÖEN/))
+  check('səhv VÖEN', throws(() => s.docs.save({ kind: 'IN', date: '2026-11-01', voen: '12 3!', lines: [{ code: 'A1', name: 'Yağ filtri', qty: '1', price: '1' }] }, W), /VÖEN/))
   check('gələcək tarix olmaz', throws(() => s.docs.save({ kind: 'IN', date: '2026-11-20', lines: [{ code: 'A1', name: 'x', qty: '1', price: '1' }] }, W), /Gələcək/))
   const in1 = s.docs.save({ kind: 'IN', date: '2026-11-01', voen: '1234567890', lines: [{ code: 'A1', name: 'Yağ filtri', qty: '10', price: '5' }, { code: 'B2', name: 'Əyləc bəndi', qty: '4', price: '12,50' }] }, W)
   check('alış №1, cəmi 100.00', in1.no === 1 && in1.total === 10000, in1)

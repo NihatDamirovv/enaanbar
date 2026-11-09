@@ -20,13 +20,26 @@ Sahibi: Nihat Damirov. XYpos ilə əlaqəsi yoxdur.
 ## Qaydalar
 - **Heç nə silinmir.** Sənəd «ləğv edilir» (səbəb ilə), arxivdə qalır. Məxaric olunmuş alışı ləğv etmək olmaz — əvvəl məxaric ləğv edilir.
 - **FIFO:** məxaric ən köhnə alışdan götürülür; qalıqdan çox çıxmaz; qəpik itmir (qat bitəndə qalan məbləğ tam keçir). Say 3, qiymət 4, məbləğ 2 onluq.
-- Ana səhifə: VÖEN (10 rəqəm), tarix, mal kodu → mal adı avtomatik. Yeni kod alışda bir dəfə adı ilə yazılır → Anbara həmin tarixlə özü əlavə olunur.
+- Ana səhifə: VÖEN (rəqəm və ya kod, məs. PRVDR0003 — kontragent adı özü çıxır; yeni VÖEN-ə ad bir dəfə yazılır), tarix, mal kodu → mal adı avtomatik. Yeni kod alışda bir dəfə adı ilə yazılır → Anbara həmin tarixlə özü əlavə olunur.
 - **Yerdəyişmə:** avtobus N gün başqa xətdə; müddət bitəndə özü öz xəttinə qayıdır. Keçid və qayıdış qeydlərə avtomatik yazılır («öz xəttinə qayıtdı — 09.11–10.11 12 xəttində idi»).
 - **Qeydlər** tarixə bağlıdır: yeni gündə «Bugünkü qeydlər» boşdur, dünənkilər «Köhnə qeydlər»də. Server saat qurşağı `Asia/Baku` (systemd `TZ`).
+
+## Köməkçi (chatbot) — `src/assistant.js`, pəncərə «Köməkçi»
+- Bazaya baxıb cavab verir, **heç nə yazmır** (8 oxuyan alət: anbar axtarışı, mal tarixçəsi, anbar xülasəsi, sənədlər, avtobusa (DQN) verilənlər, yerdəyişmələr, avtobuslar, qeydlər).
+- API OpenAI-uyğun: `ENA_LLM_KEY` (açar), `ENA_LLM_URL` (default `https://api.x.ai/v1` — Grok), `ENA_LLM_MODEL` (boşdursa ucuz/sürətli model özü seçilir). Serverdə `/etc/ena-anbar.env` (chmod 600, git-də deyil), sonra `sudo systemctl restart ena-anbar`.
+- **Limit:** gündə 150 sual (hamı üçün, `ENA_LLM_DAILY`), hər sessiyaya saatda 20, cavab ≤700 token, son 8 mesaj, sual ≤600 simvol. Sayğac bazada (`meta.llm_*`), gündəlik sıfırlanır.
+- Test: `node test/assistant-test.js` (saxta LLM ilə, 22 yoxlama).
+
+## Köhnə bazadan köçürmə (2026-11-09)
+- Köhnə proqram (.NET) bazası: `%APPDATA%\ENA Anbar\ena_anbar.db`. Skript: `ENA_DATA=... node scripts/import-old.js <ena_anbar.db> [--yes]` (yalnız boş anbara; `--yes` olmadan yoxlama).
+- Köçürüldü: 96 kontragent, 897 mal (ölçü vahidi), 4759 alış / 6266 sətir, 754 məxaric / 22853 sətir; məxaric köhnə proqramdakı kimi öz alışına (alis_uid) bağlı, şərh/DQN/xətt sətirdə. İstifadəçilər/parollar köçürülmədi.
+- Fərqlər: köhnə proqram alışa bağlantısı boş 33 məxaric sətrini (66 ədəd, ~5003 ₼) qalıqdan çıxmırdı — yeni sistem FIFO ilə çıxır (qalıq 6151 vs köhnə 6211). 4 məxaric sətrində anbarda mal yox idi (köhnə proqram icazə verirdi) — qatlar mənfiyə düşmür. 117 alışın qiyməti köhnə bazada 0-dır.
+- Serverdə köhnə fayl: `/opt/ena-anbar/import/`, köçürmədən əvvəlki nüsxə `data/backup/ena-anbar-before-import-*.db`.
 
 ## Əmrlər
 ```bash
 npm test                                   # iş qaydaları (54 yoxlama)
+node test/assistant-test.js                # köməkçi (22)
 npm run server                             # lokal server (PORT=3130, ENA_DATA=./data)
 ENA_SERVER=http://127.0.0.1:3130 npm start # proqram lokal serverlə
 npm run dist                               # dist/ENA-Anbar-Setup-<versiya>.exe (versiyanı package.json-da artır)

@@ -27,6 +27,7 @@ Pages.menu = () => {
       { page: 'notes', icon: 'note', cls: 'c-violet', title: 'Qeydlər', desc: 'Bugünkü və köhnə qeydlər' },
       { page: 'schedule', icon: 'clock', cls: 'c-blue', title: 'Çıxış cədvəli', desc: 'Avtobusların ilk çıxış saatı' },
     ],
+    ai: [{ page: 'assistant', icon: 'chat', cls: 'c-violet', title: 'Köməkçi', desc: 'Soruşun: «anbarda filan mal varmı?», «dünən hansı avtobus xəttini dəyişib?»' }],
     sys: [{ page: 'settings', icon: 'settings', cls: 'c-slate', title: 'Parametrlər', desc: 'Parollar və ehtiyat nüsxə', write: true }],
   }
   const tile = (t) => {
@@ -45,6 +46,8 @@ Pages.menu = () => {
     <div class="tiles">${TILES.anbar.map(tile).join('')}</div>
     <div class="section-title">Avtobuslar</div>
     <div class="tiles">${TILES.bus.map(tile).join('')}</div>
+    <div class="section-title">Köməkçi</div>
+    <div class="tiles">${TILES.ai.map(tile).join('')}</div>
     ${S.canWrite ? `<div class="section-title">Sistem</div><div class="tiles">${TILES.sys.map(tile).join('')}</div>` : ''}`
 
   main.addEventListener('click', async (e) => {
@@ -69,6 +72,7 @@ Pages.menu = () => {
     $('#todayPill span').textContent = `${longDate(t)}, ${weekday(t)}`
     $('#greet').textContent = `Xoş gəldiniz — ${S.roleName}`
     try {
+      api('chat.usage').then((u) => setStat('assistant', u.enabled ? `Bu gün qalan sual: ${u.left} / ${u.limit}` : 'Hələ qoşulmayıb'), () => {})
       const [items, ins, outs, board, notes] = await Promise.all([
         api('items.list'),
         api('docs.list', { kind: 'IN', from: t, to: t, status: 'ACTIVE' }),

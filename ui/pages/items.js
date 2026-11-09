@@ -52,12 +52,13 @@ Pages.items = () => {
       return
     }
     $('#wrap').innerHTML = `<table class="tbl">
-      <thead><tr><th>Kod</th><th>Mal adı</th><th>Əlavə olunub</th><th class="num">Alınıb</th><th class="num">Çıxıb</th><th class="num">Qalıq</th><th class="num">Qalıq dəyəri</th><th>Son hərəkət</th></tr></thead>
+      <thead><tr><th>Kod</th><th>Mal adı</th><th>Vahid</th><th>Əlavə olunub</th><th class="num">Alınıb</th><th class="num">Çıxıb</th><th class="num">Qalıq</th><th class="num">Qalıq dəyəri</th><th>Son hərəkət</th></tr></thead>
       <tbody>${rows
         .map(
           (i) => `<tr class="click" data-id="${i.id}">
         <td><span class="code">${esc(i.code)}</span></td>
         <td style="font-weight:500">${esc(i.name)}</td>
+        <td class="muted">${esc(i.unit || '')}</td>
         <td class="muted tabular">${dmy(i.addedDate)}</td>
         <td class="num">${fmtQty(i.qtyIn)}</td>
         <td class="num">${fmtQty(i.qtyOut)}</td>
@@ -78,7 +79,7 @@ Pages.items = () => {
       const value = d.layers.reduce((s, l) => s + l.amountLeft, 0)
       drawer({
         title: `<span class="code" style="font-size:15px;margin-right:8px">${esc(it.code)}</span>${esc(it.name)}`,
-        sub: `Anbara əlavə olunub: ${dmy(it.addedDate)}`,
+        sub: `Anbara əlavə olunub: ${dmy(it.addedDate)}${it.unit ? ` · ölçü vahidi: ${esc(it.unit)}` : ''}`,
         body: `
           <div class="stats" style="grid-template-columns:repeat(2,1fr)">
             <div class="stat"><div class="k">Qalıq</div><div class="v">${fmtQty(stock)}</div></div>
@@ -99,7 +100,8 @@ Pages.items = () => {
                 .map(
                   (m) => `<tr class="${m.status !== 'ACTIVE' ? 'cancelled' : ''}">
               <td class="tabular">${dmy(m.date)}</td>
-              <td>${m.kind === 'IN' ? '<span class="badge teal">Alış</span>' : '<span class="badge amber">Məxaric</span>'} <span class="strike">№${m.no}</span>${m.status !== 'ACTIVE' ? ' <span class="badge red">ləğv</span>' : ''}</td>
+              <td>${m.kind === 'IN' ? '<span class="badge teal">Alış</span>' : '<span class="badge amber">Məxaric</span>'} <span class="strike">№${m.no}</span>${m.status !== 'ACTIVE' ? ' <span class="badge red">ləğv</span>' : ''}
+                ${m.party || m.dqn || m.note ? `<div class="small muted" style="margin-top:3px">${[m.party, m.dqn && `DQN ${m.dqn}`, m.route && `xətt ${m.route}`, m.note].filter(Boolean).map(esc).join(' · ')}</div>` : ''}</td>
               <td class="num strike">${m.kind === 'IN' ? '+' : '−'}${fmtQty(m.qty)}</td>
               <td class="num strike">${fmtPrice(m.price)}</td>
               <td class="num strike">${fmtMoney(m.amount)}</td>

@@ -515,3 +515,35 @@ textarea.inp { height: auto; padding: 10px 12px; resize: vertical; line-height: 
   .route-card { margin-bottom: 14px; }
   .tbl th { position: static; }
 }
+
+/* ── Köməkçi (chat) ─────────────────── */
+.chat-scroll { flex: 1; overflow: auto; padding: 22px 22px 10px; }
+.chat-col { max-width: 820px; margin: 0 auto; width: 100%; }
+.chat-input { flex: none; padding: 12px 22px 18px; border-top: 1px solid var(--border); background: var(--surface); }
+.chat-input textarea.inp { resize: none; min-height: 46px; max-height: 140px; padding: 12px 14px; border-radius: 12px; }
+.chat-input .btn-lg { width: 52px; padding: 0; }
+.chat-hello { text-align: center; padding: 34px 10px 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.chat-hello h2 { margin: 6px 0 0; font: 600 21px/1.25 var(--font-display); }
+.chat-hello p { margin: 0; max-width: 520px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 8px 14px; font-size: 13.5px; cursor: pointer; color: var(--text-2); box-shadow: var(--shadow-sm); transition: border-color 0.12s, background 0.12s; }
+.chip:hover { border-color: #c9b8f3; background: var(--violet-soft); color: var(--violet); }
+.msg { display: flex; gap: 10px; margin: 0 0 14px; }
+.msg.me { justify-content: flex-end; }
+.msg .avatar { width: 32px; height: 32px; border-radius: 10px; flex: none; display: grid; place-items: center; background: var(--violet-soft); color: var(--violet); }
+.bubble { max-width: 78%; padding: 10px 14px; border-radius: 14px; line-height: 1.55; word-break: break-word; }
+.msg.me .bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 5px; white-space: pre-wrap; }
+.msg.bot .bubble { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 5px; box-shadow: var(--shadow-sm); }
+.msg.bot .bubble.err { background: var(--red-soft); border-color: #f3c9c9; color: #8f1d1d; }
+.bubble p { margin: 0 0 6px; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble ul, .bubble ol { margin: 4px 0 8px; padding-left: 20px; }
+.bubble li { margin: 2px 0; }
+.bubble code { font: 600 12.5px 'Cascadia Mono', Consolas, monospace; background: var(--surface-3); padding: 1px 5px; border-radius: 5px; }
+.chat-table { margin: 6px 0 8px; border: 1px solid var(--border); border-radius: 10px; overflow: auto; }
+.chat-table .tbl td, .chat-table .tbl th { padding: 7px 10px; font-size: 13px; }
+.dots { display: inline-flex; gap: 4px; padding: 4px 0; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); animation: blink 1.2s infinite ease-in-out; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes blink { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }

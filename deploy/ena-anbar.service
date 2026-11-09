@@ -12,6 +12,8 @@ Environment=HOST=127.0.0.1
 Environment=TZ=Asia/Baku
 Environment=ENA_DATA=/opt/ena-anbar/data
 Environment=ENA_DOWNLOAD=/opt/ena-anbar/download
+# köməkçi (chatbot) açarı: ENA_LLM_KEY=... (git-də deyil, chmod 600)
+EnvironmentFile=-/etc/ena-anbar.env
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=5

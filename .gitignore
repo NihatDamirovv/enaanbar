@@ -7,3 +7,4 @@ download/
 .local-credentials.txt
 .deploy-pkg/
 .deploy-pkg.tgz
+.grok-key

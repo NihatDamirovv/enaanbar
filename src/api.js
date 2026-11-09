@@ -7,7 +7,7 @@ const { AppError } = require('./services')
 
 const ROLE_NAME = { anbar: 'Anbardar', muhasib: 'Mühasib' }
 
-function createApi({ svc, store, backup, info, allowSetup = false }) {
+function createApi({ svc, store, backup, info, assistant, allowSetup = false }) {
   const who = (s) => ROLE_NAME[s.role] || 'sistem'
 
   function checkLock(g) {
@@ -84,6 +84,7 @@ function createApi({ svc, store, backup, info, allowSetup = false }) {
     'items.list': { fn: (a) => svc.items.list(a) },
     'items.get': { fn: (a) => svc.items.get(a) },
     'items.update': { write: true, fn: (a, c) => svc.items.update(a, who(c.session)) },
+    'parties.list': { fn: () => svc.parties.list() },
     'docs.list': { fn: (a) => svc.docs.list(a) },
     'docs.get': { fn: (a) => svc.docs.get(a) },
     'docs.nextNo': { fn: (a) => svc.docs.nextNo(a) },
@@ -103,6 +104,14 @@ function createApi({ svc, store, backup, info, allowSetup = false }) {
     'notes.today': { fn: () => svc.notes.today() },
     'notes.archive': { fn: (a) => svc.notes.archive(a) },
     'notes.add': { write: true, fn: (a, c) => svc.notes.add(a, who(c.session)) },
+    // köməkçi (chatbot) — yalnız oxuyur, hər iki ekran üçün
+    'chat.usage': { fn: () => ({ enabled: !!assistant?.enabled(), ...(assistant ? assistant.usage() : { used: 0, limit: 0, left: 0 }) }) },
+    'chat.ask': {
+      fn: (a, c) => {
+        if (!assistant) throw new AppError('Köməkçi qoşulmayıb')
+        return assistant.ask(a, { sessionKey: c.sessionKey, who: who(c.session) })
+      },
+    },
   }
 
   /** → { ok, data } və ya { ok: false, error, field, code }; write — dəyişiklik oldusa */
