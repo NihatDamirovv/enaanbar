@@ -157,21 +157,39 @@ function createAssistant({ svc, store, fetchImpl = fetch, env = process.env }) {
     })
   }
 
-  async function llm(messages) {
+  // ehtiyat model: əsas modelin dəqiqəlik limiti dolanda (pulsuz planlarda limit modelə görə ayrıdır)
+  const fallback = env.ENA_LLM_FALLBACK || ''
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+  async function call(m, messages) {
     const r = await fetchImpl(`${base}/chat/completions`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, messages, tools: toolDefs, tool_choice: 'auto', temperature: 0.2, max_tokens: MAX_TOKENS }),
+      // gpt-oss kimi «düşünən» modellərdə düşünmə qısa saxlanılır (limit və sürət üçün)
+      body: JSON.stringify({ model: m, messages, tools: toolDefs, tool_choice: 'auto', temperature: 0.2, max_tokens: /gpt-oss|qwen3/i.test(m) ? MAX_TOKENS * 2 : MAX_TOKENS, ...(/gpt-oss/i.test(m) ? { reasoning_effort: 'low' } : {}) }),
       signal: AbortSignal.timeout(45_000),
     })
     const j = await r.json().catch(() => ({}))
-    if (!r.ok) {
-      console.error('LLM', r.status, JSON.stringify(j).slice(0, 300))
+    return { r, j }
+  }
+
+  async function llm(messages) {
+    const order = [model, fallback].filter(Boolean)
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const m = order[Math.min(attempt >> 1, order.length - 1)]
+      const { r, j } = await call(m, messages)
+      if (r.ok) return j.choices?.[0]?.message
+      console.error('LLM', m, r.status, JSON.stringify(j).slice(0, 300))
       if (r.status === 401 || r.status === 403) throw new AppError('Köməkçinin API açarı qəbul olunmadı — administratora deyin')
-      if (r.status === 429) throw new AppError('Köməkçinin limiti bitib — bir az sonra yenidən yoxlayın')
-      throw new AppError('Köməkçi hazırda cavab vermir — bir az sonra yenidən yoxlayın')
+      if (r.status !== 429) throw new AppError('Köməkçi hazırda cavab vermir — bir az sonra yenidən yoxlayın')
+      // «try again in 1.9s» — qısa gözləmə və təkrar, sonra ehtiyat model
+      const sec = Number(String(j?.error?.message || '').match(/try again in ([\d.]+)s/)?.[1] || r.headers?.get?.('retry-after') || 0)
+      if (/per day|TPD|RPD/i.test(String(j?.error?.message || '')) && !fallback) break
+      if (sec > 0 && sec <= 12) await sleep(sec * 1000 + 300)
+      else if (attempt % 2 === 0 && order.length > 1) continue
+      else await sleep(2500)
     }
-    return j.choices?.[0]?.message
+    throw new AppError('Köməkçi hazırda məşğuldur — bir dəqiqədən sonra yenidən soruşun')
   }
 
   async function pickModel() {
@@ -198,7 +216,7 @@ function createAssistant({ svc, store, fetchImpl = fetch, env = process.env }) {
     if (!key) throw new AppError('Köməkçi hələ qoşulmayıb (API açarı yoxdur)')
     const hist = (Array.isArray(messages) ? messages : [])
       .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
-      .slice(-8)
+      .slice(-6)
       .map((m) => ({ role: m.role, content: m.content.slice(0, 1500) }))
     const last = hist[hist.length - 1]
     if (!last || last.role !== 'user') throw new AppError('Sualı yazın')
@@ -219,7 +237,7 @@ function createAssistant({ svc, store, fetchImpl = fetch, env = process.env }) {
 Qaydalar:
 - Həmişə Azərbaycan dilində, qısa və aydın cavab ver. Rəqəmləri dəqiq yaz (manat: ₼, 2 onluq).
 - Məlumatı YALNIZ alətlərdən götür, uydurma. Tapılmasa «tapılmadı» de. Lazımi aləti çağır, tarixləri YYYY-MM-DD ver.
-- Sən heç nə dəyişə bilməzsən (alış, məxaric, avtobus yazmaq olmaz) — belə istəkdə proqramın müvafiq pəncərəsini göstər.
+- Sən heç nə dəyişə bilməzsən. Belə istəkdə de: alış və məxaric «Ana səhifə»də, avtobus və yerdəyişmə «Avtobuslar»da, çıxış saatı «Çıxış cədvəli»ndə yazılır — bunu yalnız Anbardar edə bilər.
 - Siyahı uzundursa ən vacib 5–10-nu göstər, qalanını say kimi de. Cədvəl lazım olsa qısa markdown cədvəli işlət.
 - Anbar FIFO ilə işləyir; «DQN» — avtobusun nişanı/nömrəsi, «xətt» — marşrut.
 İstifadəçi: ${ctx?.who || ''}.`
@@ -231,7 +249,7 @@ Qaydalar:
       if (!msg) throw new AppError('Köməkçi cavab vermədi')
       const calls = msg.tool_calls || []
       if (!calls.length) return { answer: String(msg.content || '').trim() || 'Cavab tapılmadı.', tools: used, usage: usage(), model }
-      msgs.push({ role: 'assistant', content: msg.content || '', tool_calls: calls })
+      msgs.push({ role: 'assistant', content: msg.content || '', tool_calls: calls.map((c) => ({ id: c.id, type: 'function', function: { name: c.function?.name, arguments: c.function?.arguments || '{}' } })) })
       for (const c of calls) {
         const tool = TOOLS[c.function?.name]
         let out
@@ -242,7 +260,7 @@ Qaydalar:
         } catch (e) {
           out = { xeta: String(e.message || e) }
         }
-        msgs.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out).slice(0, 12000) })
+        msgs.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out).slice(0, 5000) })
       }
     }
     return { answer: 'Sual çox mürəkkəb çıxdı — daha sadə soruşun.', tools: used, usage: usage(), model }

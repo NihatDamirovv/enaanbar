@@ -15,7 +15,7 @@ Sahibi: Nihat Damirov. XYpos ilə əlaqəsi yoxdur.
 2. Ekran: **Anbardar** (öz parolu ilə — hər şeyi yazır/dəyişir) və ya **Mühasib** (yalnız baxır).
 - Parollar serverdə təyin olunur (kənardan «ilk quraşdırma» bağlıdır): `scripts/set-passwords.js` (stdin JSON, server dayanmış halda, `--force` ilə dəyişir). Proqramda: Parametrlər → Parolları dəyiş.
 - 5 səhv parol → həmin IP 1 dəqiqə kilidlənir. Sessiya 12 saat (proqram açıqdırsa yaşayır).
-- Real parollar: `.local-credentials.txt` (git-də deyil).
+- Real parollar: `.local-credentials.txt` (git-də deyil). 2026-11-09: sahibin istəyi ilə hər iki parol müvəqqəti eynidir (`set-passwords.js --force` eyni parola xəbərdarlıqla icazə verir).
 
 ## Qaydalar
 - **Heç nə silinmir.** Sənəd «ləğv edilir» (səbəb ilə), arxivdə qalır. Məxaric olunmuş alışı ləğv etmək olmaz — əvvəl məxaric ləğv edilir.
@@ -26,7 +26,9 @@ Sahibi: Nihat Damirov. XYpos ilə əlaqəsi yoxdur.
 
 ## Köməkçi (chatbot) — `src/assistant.js`, pəncərə «Köməkçi»
 - Bazaya baxıb cavab verir, **heç nə yazmır** (8 oxuyan alət: anbar axtarışı, mal tarixçəsi, anbar xülasəsi, sənədlər, avtobusa (DQN) verilənlər, yerdəyişmələr, avtobuslar, qeydlər).
-- API OpenAI-uyğun: `ENA_LLM_KEY` (açar), `ENA_LLM_URL` (default `https://api.x.ai/v1` — Grok), `ENA_LLM_MODEL` (boşdursa ucuz/sürətli model özü seçilir). Serverdə `/etc/ena-anbar.env` (chmod 600, git-də deyil), sonra `sudo systemctl restart ena-anbar`.
+- API OpenAI-uyğun: `ENA_LLM_KEY` (açar), `ENA_LLM_URL` (default `https://api.x.ai/v1` — Grok), `ENA_LLM_MODEL` (boşdursa ucuz/sürətli model özü seçilir), `ENA_LLM_FALLBACK` (əsas modelin limiti dolanda). Serverdə `/etc/ena-anbar.env` (chmod 600, git-də deyil), sonra `sudo systemctl restart ena-anbar`.
+- **Hazırda (2026-11-09): Groq pulsuz plan** — `https://api.groq.com/openai/v1`, model `openai/gpt-oss-120b`, ehtiyat `openai/gpt-oss-20b`. Groq pulsuz limiti: modelə görə dəqiqədə 8000 token, gündə 1000 sorğu → 429 gələndə «try again in Xs» qədər gözləyib təkrar, sonra ehtiyat model. Alət nəticəsi ≤5000 simvol, son 6 mesaj. Cavab ~1–3 saniyə.
+- grok.com-dakı «Cursor» növlü `grok_...` açarı xAI API-də işləmir (`xai-` açarı console.x.ai-dan, pulludur).
 - **Limit:** gündə 150 sual (hamı üçün, `ENA_LLM_DAILY`), hər sessiyaya saatda 20, cavab ≤700 token, son 8 mesaj, sual ≤600 simvol. Sayğac bazada (`meta.llm_*`), gündəlik sıfırlanır.
 - Test: `node test/assistant-test.js` (saxta LLM ilə, 22 yoxlama).
 

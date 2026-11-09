@@ -8,3 +8,4 @@ download/
 .deploy-pkg/
 .deploy-pkg.tgz
 .grok-key
+.groq-key

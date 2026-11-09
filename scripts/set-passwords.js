@@ -24,7 +24,8 @@ process.stdin.on('end', async () => {
       const salt = crypto.randomBytes(16)
       return `${salt.toString('hex')}:${crypto.scryptSync(pw, salt, 32).toString('hex')}`
     }
-    if (String(general).length < 4 || String(anbar).length < 4 || general === anbar) throw new Error('Parollar ən azı 4 simvol və fərqli olmalıdır')
+    if (String(general).length < 4 || String(anbar).length < 4) throw new Error('Parollar ən azı 4 simvol olmalıdır')
+    if (general === anbar) console.log('⚠ Ümumi və anbardar parolu eynidir — hər kəs Anbardar kimi girə bilər')
     store.tx(() => {
       store.setMeta('general_hash', hash(general))
       store.setMeta('anbar_hash', hash(anbar))
