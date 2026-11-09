@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.shots/
+data/
+download/
+.local-credentials.txt
+.deploy-pkg/
+.deploy-pkg.tgz

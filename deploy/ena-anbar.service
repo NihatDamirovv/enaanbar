@@ -1,0 +1,21 @@
+[Unit]
+Description=ENA Anbar server (baza + exe yükləmə, :8082 Caddy arxasında)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/ena-anbar/app
+Environment=NODE_ENV=production
+Environment=PORT=3130
+Environment=HOST=127.0.0.1
+Environment=TZ=Asia/Baku
+Environment=ENA_DATA=/opt/ena-anbar/data
+Environment=ENA_DOWNLOAD=/opt/ena-anbar/download
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+MemoryMax=300M
+
+[Install]
+WantedBy=multi-user.target

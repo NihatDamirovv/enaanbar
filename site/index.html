@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="az">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ENA Anbar — yüklə</title>
+    <link rel="icon" href="/icon.png" />
+    <style>
+      :root {
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #e4e8ef;
+        --primary: #2453d4;
+        --primary-hover: #1c43b3;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font: 15px/1.5 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        color: var(--text);
+        background: #f3f5f9;
+        display: flex;
+        flex-direction: column;
+      }
+      .hero {
+        position: relative;
+        overflow: hidden;
+        color: #fff;
+        padding: 64px 20px 120px;
+        background: radial-gradient(110% 90% at 0% 0%, #3c6cf0 0%, transparent 55%), radial-gradient(80% 80% at 100% 100%, #0e7490 0%, transparent 60%), #16307f;
+      }
+      .hero::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 30px 30px;
+        mask-image: linear-gradient(180deg, transparent, #000 30%, transparent);
+        pointer-events: none;
+      }
+      .wrap { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; }
+      .brand { display: flex; align-items: center; gap: 14px; }
+      .brand img { width: 54px; height: 54px; border-radius: 14px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
+      .brand b { font: 700 22px/1 'Segoe UI Variable Display', 'Segoe UI', sans-serif; letter-spacing: -0.3px; }
+      h1 { margin: 34px 0 10px; font: 700 clamp(30px, 5vw, 44px)/1.12 'Segoe UI Variable Display', 'Segoe UI', sans-serif; letter-spacing: -1px; max-width: 640px; }
+      .lead { margin: 0; max-width: 560px; color: rgba(255, 255, 255, 0.8); font-size: 17px; }
+      main { flex: 1; padding: 0 20px 60px; margin-top: -80px; position: relative; z-index: 2; }
+      .card {
+        max-width: 980px;
+        margin: 0 auto;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: 0 24px 60px -24px rgba(15, 23, 42, 0.35);
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        overflow: hidden;
+      }
+      .dl { padding: 34px; border-right: 1px solid var(--border); }
+      .dl h2 { margin: 0 0 6px; font: 600 22px/1.25 'Segoe UI Variable Display', 'Segoe UI', sans-serif; }
+      .meta { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        height: 54px;
+        padding: 0 26px;
+        border-radius: 13px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 600;
+        font-size: 16px;
+        text-decoration: none;
+        box-shadow: 0 8px 20px -8px rgba(36, 83, 212, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        transition: background 0.15s, transform 0.15s;
+      }
+      .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+      .btn[disabled] { pointer-events: none; opacity: 0.5; }
+      .note { margin-top: 22px; padding: 12px 14px; border-radius: 11px; background: #fef4e4; color: #7a3e06; font-size: 13.5px; }
+      .steps { padding: 34px; background: #f8fafc; }
+      .steps h3 { margin: 0 0 16px; font-size: 15px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+      .step { display: flex; gap: 14px; margin-bottom: 18px; }
+      .step span { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: #eaf0fd; color: var(--primary); font-weight: 700; font-size: 14px; }
+      .step b { display: block; }
+      .step p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+      .feats { max-width: 980px; margin: 22px auto 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+      .feat { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+      .feat b { display: block; font-size: 14.5px; }
+      .feat p { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+      footer { text-align: center; color: var(--muted); font-size: 13px; padding: 20px; }
+      @media (max-width: 760px) {
+        .card { grid-template-columns: 1fr; }
+        .dl { border-right: 0; border-bottom: 1px solid var(--border); }
+        .feats { grid-template-columns: 1fr 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <div class="wrap">
+        <div class="brand"><img src="/icon.png" alt="" /><b>ENA Anbar</b></div>
+        <h1>Anbar, avtobuslar və gündəlik qeydlər — bir proqramda</h1>
+        <p class="lead">Windows proqramı. Bütün məlumat bu serverdəki bazada saxlanılır — hər kompüter eyni məlumatı görür.</p>
+      </div>
+    </section>
+    <main>
+      <div class="card">
+        <div class="dl">
+          <h2>Windows üçün yüklə</h2>
+          <div class="meta">Versiya {{VERSION}} · {{SIZE}} · {{DATE}}</div>
+          <a class="btn" href="/download" {{READY}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+            ENA Anbar-ı yüklə
+          </a>
+          <div class="note">Windows «Naməlum naşir» xəbərdarlığı göstərsə: <b>Ətraflı → Yenə də işə sal</b> (More info → Run anyway).</div>
+        </div>
+        <div class="steps">
+          <h3>Necə qurulur</h3>
+          <div class="step"><span>1</span><div><b>Yüklə</b><p>Yuxarıdakı düymə ilə quraşdırıcını yükləyin.</p></div></div>
+          <div class="step"><span>2</span><div><b>Quraşdır</b><p>Faylı açın, «Növbəti» ilə quraşdırın — iş masasında ikon yaranır.</p></div></div>
+          <div class="step"><span>3</span><div><b>Daxil ol</b><p>Ümumi parolu yazın və ekranı seçin: Anbardar və ya Mühasib.</p></div></div>
+        </div>
+      </div>
+      <div class="feats">
+        <div class="feat"><b>Anbar — FIFO</b><p>Alış və məxaric, qalıq və dəyəri</p></div>
+        <div class="feat"><b>Avtobuslar</b><p>Xətlərə görə, müvəqqəti yerdəyişmə</p></div>
+        <div class="feat"><b>Qeydlər</b><p>Hər gün yenilənir, köhnələr arxivdə</p></div>
+        <div class="feat"><b>Çıxış cədvəli</b><p>İlk çıxış saatları, çap</p></div>
+      </div>
+    </main>
+    <footer>ENA Anbar</footer>
+  </body>
+</html>
